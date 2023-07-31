@@ -11,6 +11,7 @@ public class PlayerJumpState : PlayerBaseState
 
     public override void EnterState() {
         HandleJump(); 
+        Debug.Log("Entering Jump");
     }
 
     public override void UpdateState() {
@@ -25,13 +26,7 @@ public class PlayerJumpState : PlayerBaseState
     }
 
     public override void CheckSwitchStates() {
-        //Issue with the isGrounded from Character Controller. Using Raycast instead
 
-        //if (_context.CharacterController.isGrounded)
-        //{
-        //    SwitchState(_factory.Grounded()); 
-        //}
-        Debug.Log(_context.CharacterController.isGrounded); 
         if(_context.CharacterController.isGrounded)
         {
             SwitchState(_factory.Grounded()); 

@@ -27,5 +27,10 @@ public class PlayerStateFactory
     {
         return new PlayerFallState(_context, this);
     }
+    
+    public PlayerBaseState Roll()
+    {
+        return new PlayerRollingState(_context, this);
+    }
 
 }

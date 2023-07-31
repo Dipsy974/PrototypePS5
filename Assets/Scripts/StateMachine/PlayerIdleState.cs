@@ -27,6 +27,10 @@ public class PlayerIdleState : PlayerBaseState
         {
             SwitchState(_factory.Walk()); 
         }
+        else if (_context.IsRollPressed)
+        {
+            SwitchState(_factory.Roll()); 
+        }
     }
 
     public override void InitializeSubState() { }
