@@ -129,7 +129,7 @@ Mesh:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: pb_Mesh25654
+  m_Name: pb_Mesh25664
   serializedVersion: 10
   m_SubMeshes:
   - serializedVersion: 2
@@ -4505,7 +4505,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1244652194}
-  m_LocalRotation: {x: 0.19908552, y: -0.000000008430971, z: 0.0000000017127699, w: 0.97998214}
+  m_LocalRotation: {x: 0.19908552, y: 0.000000008430977, z: -0.0000000017127713, w: 0.97998214}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -9250,8 +9250,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   maxJumpHeight: 3
   maxJumpTime: 0.75
-  movementSpeed: 4
-  runMultiplyer: 1.5
+  rollSpeed: 8
+  rollDistance: 5
+  rollCooldown: 0.5
+  movementSpeed: 5
+  runMultiplyer: 2
 --- !u!4 &2052296632 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -4216859302048453862, guid: 82a2914d8f86c62488456950c8330e38, type: 3}

@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.Serialization;
 
 public class PlayerStateMachine : MonoBehaviour
 {
@@ -27,7 +28,12 @@ public class PlayerStateMachine : MonoBehaviour
     private bool _isJumpAnimating;
     
     //Roll variables
-    private bool _isRollPressed;
+    private bool _isRollPressed, _isRolling, _rollDone, _canRoll;
+    [SerializeField] private float rollSpeed, rollDistance, rollCooldown;
+    private float _rollTime;
+    private Vector3 _rollDirection;
+    
+    
 
     //Gravity variables
     private float _gravity = -9.8f;
@@ -63,13 +69,21 @@ public class PlayerStateMachine : MonoBehaviour
     public bool IsMovementPressed { get { return _isMovementPressed; } }
     public bool IsRunPressed { get { return _isRunPressed; } }
     public bool IsRollPressed { get { return _isRollPressed; } }
+    public bool IsRolling { get { return _isRolling; }set { _isRolling = value; } }
+    public bool RollDone { get { return _rollDone; }set { _rollDone = value; } }
+    public bool CanRoll { get { return _canRoll; }set { _canRoll = value; } }
     public float Gravity { get { return _gravity; } set { _gravity = value; } }
+    public float RollSpeed { get { return rollSpeed; } set { rollSpeed = value; } }
+    public float RollTime { get { return _rollTime; } set { _rollTime = value; } }
+    public float RollCooldown { get { return rollCooldown; } set { rollCooldown = value; } }
     public float GroundedGravity { get { return _groundedGravity; } set { _groundedGravity = value; } }
     public float CurrentMovementY { get { return _currentMovement.y; } set { _currentMovement.y = value; } }
     public float AppliedMovementY { get { return _appliedMovement.y; } set { _appliedMovement.y = value; } }
     public float AppliedMovementX { get { return _appliedMovement.x; } set { _appliedMovement.x = value; } }
     public float AppliedMovementZ { get { return _appliedMovement.z; } set { _appliedMovement.z = value; } }
     public Vector2 CurrentMovementInput { get { return _currentMovementInput; } }
+    public Vector3 CurrentMovement { get { return _currentMovement; } }
+    public Vector3 RollDirection { get { return _rollDirection; }set { _rollDirection = value; } }
 
 
 
@@ -106,6 +120,7 @@ public class PlayerStateMachine : MonoBehaviour
         _playerInput.CharacterControls.Roll.canceled += OnRoll;
 
         SetUpJumpVariables();
+        SetUpRollVariables();
 
     }
 
@@ -115,6 +130,16 @@ public class PlayerStateMachine : MonoBehaviour
         _gravity = (-2 * maxJumpHeight) / Mathf.Pow(timeToApex, 2);
         _initialJumpVelocity = (2 * maxJumpHeight) / timeToApex;
     }
+
+    private void SetUpRollVariables()
+    {
+        _canRoll = true;
+        _rollTime = rollDistance / rollSpeed;
+        //Index of roll animation clip in animator is 3 (for now)
+        float rollPlayrate = (Animator.runtimeAnimatorController.animationClips[3].length/_rollTime); 
+        Animator.SetFloat("RollPlayrate", rollPlayrate);
+    }
+
     // Start is called before the first frame update
     void Start()
     {
@@ -124,13 +149,20 @@ public class PlayerStateMachine : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        HandleRotation();
+
+        if (_isRolling)
+        {
+            _characterController.Move(_appliedMovement * Time.deltaTime);
+
+        }
+        else
+        {
+            //Convert Movement relative to Camera
+            _cameraRelativeMovement = ConvertToCameraSpace(_appliedMovement);
+            HandleRotation();
+            _characterController.Move(_cameraRelativeMovement * Time.deltaTime);
+        }
         
-        //Convert Movement relative to Camera
-        _cameraRelativeMovement = ConvertToCameraSpace(_appliedMovement);
-
-        _characterController.Move(_cameraRelativeMovement * Time.deltaTime);
-
         _currentState.UpdateStates(); 
     }
 
@@ -143,7 +175,7 @@ public class PlayerStateMachine : MonoBehaviour
         positionToLookAt.z = _cameraRelativeMovement.z;
 
         Quaternion currentRotation = transform.rotation;
-        if (_isMovementPressed)
+        if (_isMovementPressed && !_isRolling)
         {
             Quaternion targetRotation = Quaternion.LookRotation(positionToLookAt);
             transform.rotation = Quaternion.Slerp(currentRotation, targetRotation, _rotationFactorPerFrame * Time.deltaTime);
@@ -187,6 +219,7 @@ public class PlayerStateMachine : MonoBehaviour
     {
         _playerInput.CharacterControls.Disable();
     }
+
     
     private Vector3 ConvertToCameraSpace(Vector3 vectorToRotate)
     {
@@ -210,4 +243,6 @@ public class PlayerStateMachine : MonoBehaviour
         return vectorRotatedToCameraSpace; 
 
     }
+
+
 }

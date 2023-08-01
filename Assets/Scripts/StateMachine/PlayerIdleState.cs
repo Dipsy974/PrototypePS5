@@ -8,6 +8,7 @@ public class PlayerIdleState : PlayerBaseState
     public override void EnterState() {
         _context.Animator.SetBool(_context.IsWalkingHash, false);
         _context.Animator.SetBool(_context.IsRunningHash, false);
+        _context.Animator.SetBool(_context.IsRollingHash, false);
         _context.AppliedMovementX = 0;
         _context.AppliedMovementZ = 0;
     }
@@ -27,7 +28,7 @@ public class PlayerIdleState : PlayerBaseState
         {
             SwitchState(_factory.Walk()); 
         }
-        else if (_context.IsRollPressed)
+        else if (_context.IsRollPressed && _context.CharacterController.isGrounded && _context.CanRoll)
         {
             SwitchState(_factory.Roll()); 
         }
