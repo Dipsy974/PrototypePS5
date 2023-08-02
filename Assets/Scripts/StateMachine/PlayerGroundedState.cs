@@ -11,6 +11,7 @@ public class PlayerGroundedState : PlayerBaseState
     public override void EnterState() {
         _context.CurrentMovementY = _context.Gravity;
         _context.AppliedMovementY = _context.Gravity;
+        _context.WasJumping = false;
         Debug.Log("Entering Grounded");
     }
 
@@ -22,7 +23,7 @@ public class PlayerGroundedState : PlayerBaseState
 
     public override void CheckSwitchStates() {
         //if player is grounded and jump, switch to jump state
-        if (_context.IsJumpPressed)
+        if (_context.IsJumpPressed && _context.CanJump && !_context.IsRolling)
         {
             SwitchState(_factory.Jump()); 
         }else if (!_context.CharacterController.isGrounded)

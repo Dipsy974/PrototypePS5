@@ -74,6 +74,7 @@ public class PlayerRollingState : PlayerBaseState
     {
         _context.CanRoll = false;
         yield return new WaitForSeconds(_context.RollCooldown);
+        yield return new WaitUntil(()=> !_context.IsRollPressed);
         _context.CanRoll = true;
     }
     

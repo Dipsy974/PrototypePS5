@@ -32,5 +32,9 @@ public class PlayerStateFactory
     {
         return new PlayerRollingState(_context, this);
     }
+    public PlayerBaseState Hanging()
+    {
+        return new PlayerHangingState(_context, this);
+    }
 
 }

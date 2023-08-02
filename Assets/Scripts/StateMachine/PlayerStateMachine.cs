@@ -20,7 +20,7 @@ public class PlayerStateMachine : MonoBehaviour
     private bool _isRunPressed;
     
     //Jump variables
-    private bool _isJumpPressed = false;
+    private bool _isJumpPressed, _canJump, _wasJumping;
     private float _initialJumpVelocity;
     public float maxJumpHeight = 3.0f;
     public float maxJumpTime = 0.75f;
@@ -33,6 +33,9 @@ public class PlayerStateMachine : MonoBehaviour
     private float _rollTime;
     private Vector3 _rollDirection;
     
+    //Ledge grab variables
+    private bool _isHanging, _isDownLedgePressed, _canGrabLedge;
+    private Vector3 _positionToGrab, _directionToFace;
     
 
     //Gravity variables
@@ -44,6 +47,7 @@ public class PlayerStateMachine : MonoBehaviour
     private int _isRunningHash;
     private int _isJumpingHash;
     private int _isRollingHash;
+    private int _isHangingHash;
 
     private float _rotationFactorPerFrame = 15.0f;
     public float movementSpeed;
@@ -62,16 +66,22 @@ public class PlayerStateMachine : MonoBehaviour
     public int IsWalkingHash { get { return _isWalkingHash; } }
     public int IsRunningHash { get { return _isRunningHash; } }
     public int IsRollingHash { get { return _isRollingHash; } }
+    public int IsHangingHash { get { return _isHangingHash; } }
     public float InitialJumpVelocity { get { return _initialJumpVelocity; } }
     public bool IsJumpAnimating { set { _isJumpAnimating = value; } }
     public bool IsJumping { set { _isJumping = true; } }
     public bool IsJumpPressed { get { return _isJumpPressed;  } }
+    public bool WasJumping { get { return _wasJumping; }set { _wasJumping = value; } }
+    public bool CanJump { get { return _canJump; }set { _canJump = value; } }
     public bool IsMovementPressed { get { return _isMovementPressed; } }
     public bool IsRunPressed { get { return _isRunPressed; } }
     public bool IsRollPressed { get { return _isRollPressed; } }
     public bool IsRolling { get { return _isRolling; }set { _isRolling = value; } }
     public bool RollDone { get { return _rollDone; }set { _rollDone = value; } }
     public bool CanRoll { get { return _canRoll; }set { _canRoll = value; } }
+    public bool IsHanging { get { return _isHanging; }set { _isHanging = value; } }
+    public bool IsDownLedgePressed { get { return _isDownLedgePressed; }set { _isDownLedgePressed = value; } }
+    public bool CanGrabLedge { get { return _canGrabLedge; }set { _canGrabLedge = value; } }
     public float Gravity { get { return _gravity; } set { _gravity = value; } }
     public float RollSpeed { get { return rollSpeed; } set { rollSpeed = value; } }
     public float RollTime { get { return _rollTime; } set { _rollTime = value; } }
@@ -84,6 +94,8 @@ public class PlayerStateMachine : MonoBehaviour
     public Vector2 CurrentMovementInput { get { return _currentMovementInput; } }
     public Vector3 CurrentMovement { get { return _currentMovement; } }
     public Vector3 RollDirection { get { return _rollDirection; }set { _rollDirection = value; } }
+    public Vector3 PositionToGrab { get { return _positionToGrab; }set { _positionToGrab= value; } }
+    public Vector3 DirectionToFace { get { return _directionToFace; }set { _directionToFace= value; } }
 
 
 
@@ -102,6 +114,7 @@ public class PlayerStateMachine : MonoBehaviour
         _isRunningHash = Animator.StringToHash("isRunning");
         _isJumpingHash = Animator.StringToHash("isJumping");
         _isRollingHash = Animator.StringToHash("isRolling");
+        _isHangingHash = Animator.StringToHash("isHanging");
 
         //Called when the input system first receives the input
         _playerInput.CharacterControls.Move.started += OnMovementInput;
@@ -118,14 +131,20 @@ public class PlayerStateMachine : MonoBehaviour
         
         _playerInput.CharacterControls.Roll.started += OnRoll;
         _playerInput.CharacterControls.Roll.canceled += OnRoll;
+        
+        _playerInput.CharacterControls.DownLedge.started += OnDownLedge;
+        _playerInput.CharacterControls.DownLedge.performed += OnDownLedge;
+        _playerInput.CharacterControls.DownLedge.canceled += OnDownLedge;
 
         SetUpJumpVariables();
         SetUpRollVariables();
+        _canGrabLedge = true;
 
     }
 
     private void SetUpJumpVariables()
     {
+        _canJump = true;
         float timeToApex = maxJumpTime / 2;
         _gravity = (-2 * maxJumpHeight) / Mathf.Pow(timeToApex, 2);
         _initialJumpVelocity = (2 * maxJumpHeight) / timeToApex;
@@ -150,19 +169,21 @@ public class PlayerStateMachine : MonoBehaviour
     void Update()
     {
 
-        if (_isRolling)
+        if (!_isHanging)
         {
-            _characterController.Move(_appliedMovement * Time.deltaTime);
+            if (_isRolling)
+            {
+                _characterController.Move(_appliedMovement * Time.deltaTime);
 
+            }
+            else
+            {
+                //Convert Movement relative to Camera
+                _cameraRelativeMovement = ConvertToCameraSpace(_appliedMovement);
+                HandleRotation();
+                _characterController.Move(_cameraRelativeMovement * Time.deltaTime);
+            }
         }
-        else
-        {
-            //Convert Movement relative to Camera
-            _cameraRelativeMovement = ConvertToCameraSpace(_appliedMovement);
-            HandleRotation();
-            _characterController.Move(_cameraRelativeMovement * Time.deltaTime);
-        }
-        
         _currentState.UpdateStates(); 
     }
 
@@ -208,6 +229,10 @@ public class PlayerStateMachine : MonoBehaviour
     private void OnRoll(InputAction.CallbackContext context)
     {
         _isRollPressed = context.ReadValueAsButton();
+    }
+    private void OnDownLedge(InputAction.CallbackContext context)
+    {
+        _isDownLedgePressed = context.ReadValueAsButton();
     }
 
     private void OnEnable()
