@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class PlayerJumpState : PlayerBaseState
@@ -11,6 +12,8 @@ public class PlayerJumpState : PlayerBaseState
 
     public override void EnterState() {
         HandleJump(); 
+        Debug.Log("Entering Jump");
+        
     }
 
     public override void UpdateState() {
@@ -21,20 +24,20 @@ public class PlayerJumpState : PlayerBaseState
 
     public override void ExitState() {
         _context.Animator.SetBool(_context.IsJumpingHash, false);
-        _context.IsJumpAnimating = false; 
+        _context.IsJumpAnimating = false;
+        _context.StartCoroutine(WaitUntilJumpPressedAgain());
+        _context.WasJumping = true;
     }
 
     public override void CheckSwitchStates() {
-        //Issue with the isGrounded from Character Controller. Using Raycast instead
 
-        //if (_context.CharacterController.isGrounded)
-        //{
-        //    SwitchState(_factory.Grounded()); 
-        //}
-        Debug.Log(_context.CharacterController.isGrounded); 
         if(_context.CharacterController.isGrounded)
         {
             SwitchState(_factory.Grounded()); 
+        }
+        else if (_context.CurrentMovementY <= 0f || !_context.IsJumpPressed)
+        {
+            SwitchState(_factory.Fall());
         }
     }
 
@@ -67,22 +70,15 @@ public class PlayerJumpState : PlayerBaseState
 
     void HandleGravity()
     {
-        bool isFalling = _context.CurrentMovementY <= 0f || !_context.IsJumpPressed;
-        float fallMultiplyer = 2f;
-
-        if (isFalling)
-        {
-            float previousYVelocity = _context.CurrentMovementY;
-            _context.CurrentMovementY = _context.CurrentMovementY + (_context.Gravity * fallMultiplyer * Time.deltaTime);
-            _context.AppliedMovementY = (previousYVelocity + _context.CurrentMovementY) * .5f;
-
-        }
-        else
-        {
-            float previousYVelocity = _context.CurrentMovementY;
-            _context.CurrentMovementY = _context.CurrentMovementY + (_context.Gravity * Time.deltaTime);
-            _context.AppliedMovementY = (previousYVelocity + _context.CurrentMovementY) * .5f;
-
-        }
+        float previousYVelocity = _context.CurrentMovementY;
+        _context.CurrentMovementY = _context.CurrentMovementY + (_context.Gravity * Time.deltaTime);
+        _context.AppliedMovementY = (previousYVelocity + _context.CurrentMovementY) * .5f;
+    }
+    
+    private IEnumerator WaitUntilJumpPressedAgain()
+    {
+        _context.CanJump = false;
+        yield return new WaitUntil(()=> !_context.IsJumpPressed);
+        _context.CanJump = true;
     }
 }

@@ -7,8 +7,9 @@ public class PlayerRunState : PlayerBaseState
     public PlayerRunState(PlayerStateMachine currentContext, PlayerStateFactory playerStateFactory) : base(currentContext, playerStateFactory) { }
 
     public override void EnterState() {
-        _context.Animator.SetBool(_context.IsWalkingHash, true);
         _context.Animator.SetBool(_context.IsRunningHash, true);
+        _context.Animator.SetBool(_context.IsWalkingHash, true);
+        _context.Animator.SetBool(_context.IsRollingHash, false);
     }
 
     public override void UpdateState() {
@@ -29,6 +30,10 @@ public class PlayerRunState : PlayerBaseState
         else if (_context.IsMovementPressed && !_context.IsRunPressed)
         {
             SwitchState(_factory.Walk());
+        }
+        else if (_context.IsRollPressed && _context.CharacterController.isGrounded && _context.CanRoll)
+        {
+            SwitchState(_factory.Roll()); 
         }
     }
 
