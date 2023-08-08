@@ -36,5 +36,10 @@ public class PlayerStateFactory
     {
         return new PlayerHangingState(_context, this);
     }
+    
+    public PlayerBaseState Attack()
+    {
+        return new PlayerAttackState(_context, this);
+    }
 
 }

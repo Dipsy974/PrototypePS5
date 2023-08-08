@@ -35,6 +35,10 @@ public class PlayerRunState : PlayerBaseState
         {
             SwitchState(_factory.Roll()); 
         }
+        else if (_context.IsAttackPressed && _context.CharacterController.isGrounded)
+        {
+            SwitchState(_factory.Attack());
+        }
     }
 
     public override void InitializeSubState() { }

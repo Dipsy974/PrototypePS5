@@ -31,13 +31,23 @@ public class MovementController : MonoBehaviour
 
     //Gravity variables
     private float _gravity = -9.8f;
-    private float _groundedGravity = -.05f; 
+    private float _groundedGravity = -.05f;
+
+    //Attack variables
+    private bool _isAttackPressed = false;
+    private bool _isAttacking = false;
+    private bool _isComboFinished = false;  //issue when click is pressed at the end of the third attack: _isAttackingHash set to true but EndAttack not called because next animation not starting (click is pressed during transition). So I add a tiny CD at the end of combo
+    private bool _isAttackAnimating;
+    private int _attackCount = 0;
+    private Coroutine currentAttackResetRoutine = null; 
 
     //Animation Hashes
     private int _isWalkingHash;
     private int _isRunningHash;
     private int _isJumpingHash; 
     private int _isDoubleJumpingHash; 
+    private int _isAttackingHash;
+    private int _attackCountHash; 
 
     private float _rotationFactorPerFrame = 15.0f;
     public float movementSpeed; 
@@ -53,6 +63,8 @@ public class MovementController : MonoBehaviour
         _isRunningHash = Animator.StringToHash("isRunning");
         _isJumpingHash = Animator.StringToHash("isJumping");
         _isDoubleJumpingHash = Animator.StringToHash("isDoubleJumping");
+        _isAttackingHash = Animator.StringToHash("isAttacking");
+        _attackCountHash = Animator.StringToHash("attackCount"); 
 
         //Called when the input system first receives the input
         _playerInput.CharacterControls.Move.started += OnMovementInput; 
@@ -66,6 +78,9 @@ public class MovementController : MonoBehaviour
 
         _playerInput.CharacterControls.Jump.started += OnJump;
         _playerInput.CharacterControls.Jump.canceled += OnJump;
+
+        _playerInput.CharacterControls.Attack.started += OnAttack;
+        _playerInput.CharacterControls.Attack.canceled += OnAttack;
 
 
         SetUpJumpVariables(); 
@@ -104,6 +119,7 @@ public class MovementController : MonoBehaviour
 
         HandleGravity();
         HandleJump();
+        HandleAttack(); 
     }
 
     private void SetUpJumpVariables()
@@ -123,6 +139,50 @@ public class MovementController : MonoBehaviour
         jumpGrativities.Add(1, _gravity);
         jumpGrativities.Add(2, secondJumpGravity);
 
+    }
+
+    private void SetUpAttackVariables()
+    {
+
+    }
+
+    private void HandleAttack()
+    {
+
+        if(!_isAttacking && _isAttackPressed && !_isComboFinished) //Attack only if _isComboFinished correctly reset
+        {
+            if(_attackCount < 3 && currentAttackResetRoutine != null)
+            {
+                StopCoroutine(currentAttackResetRoutine); //Stop the coroutine only if combo is not finished
+            }
+ 
+            _animator.SetBool(_isAttackingHash, true);
+            _isAttackAnimating = true;
+            _isAttacking = true;
+            _attackCount++;
+            _animator.SetInteger(_attackCountHash, _attackCount);
+        }
+
+    }
+
+    private void EndAttack()  //Called in events in each attack animation settings
+    {
+        _animator.SetBool(_isAttackingHash, false);
+        _isAttacking = false;
+        currentAttackResetRoutine = StartCoroutine(attackResetRoutine());  //Set a coroutine to reset attack count after a delay at the end of an attack
+        if(_attackCount >= 3) //Combo finished
+        {
+            _isComboFinished = true; //Set combo finished to true : player can't attack anymore until the attackResetRoutine set it to false
+            _attackCount = 0;
+            _animator.SetInteger(_attackCountHash, _attackCount);
+        }
+    }
+
+    IEnumerator attackResetRoutine()  //Reset attack count but also reset _isComboFinished in case the combo is over
+    {
+        yield return new WaitForSeconds(.5f);
+        _attackCount = 0;
+        _isComboFinished = false; 
     }
 
     private void HandleJump()
@@ -277,6 +337,11 @@ public class MovementController : MonoBehaviour
     private void OnJump(InputAction.CallbackContext context)
     {
         _isJumpPressed = context.ReadValueAsButton(); 
+    }
+
+    private void OnAttack(InputAction.CallbackContext context)
+    {
+        _isAttackPressed = context.ReadValueAsButton();
     }
 
     private void OnEnable()

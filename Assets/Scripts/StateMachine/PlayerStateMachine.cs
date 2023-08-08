@@ -36,7 +36,16 @@ public class PlayerStateMachine : MonoBehaviour
     //Ledge grab variables
     private bool _isHanging, _isDownLedgePressed, _canGrabLedge;
     private Vector3 _positionToGrab, _directionToFace;
-    
+
+    //Attack variables
+    private bool _isAttackPressed = false;
+    private bool _isAttacking = false;
+    private bool _isComboFinished = false;  //issue when click is pressed at the end of the third attack: _isAttackingHash set to true but EndAttack not called because next animation not starting (click is pressed during transition). So I add a tiny CD at the end of combo
+    private bool _isAttackAnimating;
+    private int _attackCount = 0;
+    private Coroutine currentAttackResetRoutine = null;
+    private int _isAttackingHash;
+    private int _attackCountHash;
 
     //Gravity variables
     private float _gravity = -9.8f;
@@ -67,6 +76,8 @@ public class PlayerStateMachine : MonoBehaviour
     public int IsRunningHash { get { return _isRunningHash; } }
     public int IsRollingHash { get { return _isRollingHash; } }
     public int IsHangingHash { get { return _isHangingHash; } }
+    public int IsAttackingHash { get { return _isAttackingHash; } }
+    public int AttackCountHash { get { return _attackCountHash; } }
     public float InitialJumpVelocity { get { return _initialJumpVelocity; } }
     public bool IsJumpAnimating { set { _isJumpAnimating = value; } }
     public bool IsJumping { set { _isJumping = true; } }
@@ -82,6 +93,11 @@ public class PlayerStateMachine : MonoBehaviour
     public bool IsHanging { get { return _isHanging; }set { _isHanging = value; } }
     public bool IsDownLedgePressed { get { return _isDownLedgePressed; }set { _isDownLedgePressed = value; } }
     public bool CanGrabLedge { get { return _canGrabLedge; }set { _canGrabLedge = value; } }
+    public bool IsAttackPressed { get { return _isAttackPressed; } }
+    public bool IsAttacking { get { return _isAttacking; } set { _isAttacking = value; } }
+    public bool IsComboFinished { get { return _isComboFinished; } set { _isComboFinished = value; } }
+    public int AttackCount { get { return _attackCount; } set { _attackCount = value; } }
+    public Coroutine CurrentAttackResetRoutine { get { return currentAttackResetRoutine; } set { currentAttackResetRoutine = value; } }
     public float Gravity { get { return _gravity; } set { _gravity = value; } }
     public float RollSpeed { get { return rollSpeed; } set { rollSpeed = value; } }
     public float RollTime { get { return _rollTime; } set { _rollTime = value; } }
@@ -115,6 +131,8 @@ public class PlayerStateMachine : MonoBehaviour
         _isJumpingHash = Animator.StringToHash("isJumping");
         _isRollingHash = Animator.StringToHash("isRolling");
         _isHangingHash = Animator.StringToHash("isHanging");
+        _isAttackingHash = Animator.StringToHash("isAttacking");
+        _attackCountHash = Animator.StringToHash("attackCount");
 
         //Called when the input system first receives the input
         _playerInput.CharacterControls.Move.started += OnMovementInput;
@@ -135,6 +153,9 @@ public class PlayerStateMachine : MonoBehaviour
         _playerInput.CharacterControls.DownLedge.started += OnDownLedge;
         _playerInput.CharacterControls.DownLedge.performed += OnDownLedge;
         _playerInput.CharacterControls.DownLedge.canceled += OnDownLedge;
+
+        _playerInput.CharacterControls.Attack.started += OnAttack;
+        _playerInput.CharacterControls.Attack.canceled += OnAttack;
 
         SetUpJumpVariables();
         SetUpRollVariables();
@@ -169,6 +190,10 @@ public class PlayerStateMachine : MonoBehaviour
             {
                 _characterController.Move(_appliedMovement * Time.deltaTime);
 
+            }
+            else if (_isAttacking)
+            {
+                _characterController.Move(Vector3.zero);
             }
             else
             {
@@ -229,6 +254,12 @@ public class PlayerStateMachine : MonoBehaviour
         _isDownLedgePressed = context.ReadValueAsButton();
     }
 
+    private void OnAttack(InputAction.CallbackContext context)
+    {
+        _isAttackPressed = context.ReadValueAsButton();
+    }
+
+
     private void OnEnable()
     {
         _playerInput.CharacterControls.Enable();
@@ -263,5 +294,25 @@ public class PlayerStateMachine : MonoBehaviour
 
     }
 
+    private void EndAttack()  //Called in events in each attack animation settings
+    {
+        _animator.SetBool(_isAttackingHash, false);
+        _isAttacking = false;
+        currentAttackResetRoutine = StartCoroutine(attackResetRoutine());  //Set a coroutine to reset attack count after a delay at the end of an attack
+        if (_attackCount >= 3) //Combo finished
+        {
+            _isComboFinished = true; //Set combo finished to true : player can't attack anymore until the attackResetRoutine set it to false
+            _attackCount = 0;
+            _animator.SetInteger(_attackCountHash, _attackCount);
+        }
+    }
 
+
+
+    private IEnumerator attackResetRoutine()  //Reset attack count but also reset _isComboFinished in case the combo is over
+    {
+        yield return new WaitForSeconds(.5f);
+        _attackCount = 0;
+        _isComboFinished = false;
+    }
 }
