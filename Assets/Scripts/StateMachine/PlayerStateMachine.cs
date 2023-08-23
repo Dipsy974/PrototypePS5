@@ -1,15 +1,18 @@
 using System.Collections;
 using System.Collections.Generic;
+using Cinemachine;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.Serialization;
 
 public class PlayerStateMachine : MonoBehaviour
 {
+    [SerializeField] private CinemachineInputProvider _cinemachineInput;
+    
     private PlayerInput _playerInput;
     private CharacterController _characterController;
     private Animator _animator;
-
+    
     //Movement variables
     private Vector2 _currentMovementInput;
     private Vector3 _currentMovement;
@@ -71,6 +74,7 @@ public class PlayerStateMachine : MonoBehaviour
 
     public CharacterController CharacterController { get { return _characterController; } set { _characterController = value; } }
     public Animator Animator { get { return _animator; } }
+    public PlayerInput PlayerInput { get { return _playerInput; } }
     public int IsJumpingHash { get { return _isJumpingHash; } }
     public int IsWalkingHash { get { return _isWalkingHash; } }
     public int IsRunningHash { get { return _isRunningHash; } }
@@ -120,6 +124,7 @@ public class PlayerStateMachine : MonoBehaviour
         _playerInput = new PlayerInput();
         _characterController = GetComponent<CharacterController>();
         _animator = GetComponent<Animator>();
+        _cinemachineInput.XYAxis.Set(_playerInput.CharacterControls.Look);
 
         //setup State
         _states = new PlayerStateFactory(this);
@@ -307,12 +312,12 @@ public class PlayerStateMachine : MonoBehaviour
         }
     }
 
-
-
+    
     private IEnumerator attackResetRoutine()  //Reset attack count but also reset _isComboFinished in case the combo is over
     {
         yield return new WaitForSeconds(.5f);
         _attackCount = 0;
         _isComboFinished = false;
     }
+    
 }

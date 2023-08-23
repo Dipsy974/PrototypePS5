@@ -1,41 +1,32 @@
 
+using System;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
 public class WheelButtonController : MonoBehaviour
 {
-    [SerializeField] private TextMeshProUGUI itemText;
-    [SerializeField] private string itemName;
+    public int id;
+    public string itemName;
+    
+    [SerializeField] private SelectionWheel _wheel;
+    private Button _button;
 
-    private bool _isSelected;
-
-    // Update is called once per frame
-    void Update()
+    private void OnEnable()
     {
-        if (_isSelected)
-        {
-            itemText.text = itemName;
-        }
-    }
-
-    public void OnSelected()
-    {
-        _isSelected = true;
-    }
-
-    public void OnUnselected()
-    {
-        _isSelected = false;
+        _button = GetComponent<Button>();
     }
 
     public void OnHoverEnter()
     {
-        itemText.text = itemName;
+        if (_button != null && _button.interactable)
+        {
+            _wheel.SelectNewButton(this);
+        }
     }
     
     public void OnHoverExit()
     {
-        itemText.text = "";
+        _wheel.UnselectButton();
     }
 }
