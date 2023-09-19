@@ -16,9 +16,20 @@ public class ThirdPersonCamera : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.A))
+        //if (Input.GetKeyDown(KeyCode.A))
+        //{
+        //    SwitchCameraStyle(); 
+        //}
+
+        if (Input.GetKey(KeyCode.A) && !focusCamera.activeInHierarchy)
         {
-            SwitchCameraStyle(); 
+            basicCamera.SetActive(false);
+            focusCamera.SetActive(true);
+        }
+        else if(!Input.GetKey(KeyCode.A) && !basicCamera.activeInHierarchy)
+        {
+            basicCamera.SetActive(true);
+            focusCamera.SetActive(false);
         }
     }
 

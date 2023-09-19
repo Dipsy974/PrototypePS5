@@ -315,4 +315,18 @@ public class PlayerStateMachine : MonoBehaviour
         _attackCount = 0;
         _isComboFinished = false;
     }
+
+    //Provisoire CACA, pour détecter la peinture et faire un saut
+    private void OnControllerColliderHit(ControllerColliderHit hit)
+    {
+        if(hit.collider.gameObject.tag == "Paint")
+        {
+            _appliedMovement.y = 60; 
+            _currentState = _states.Jump();
+            _currentState.EnterState();
+
+            Debug.Log("efzfgez"); 
+        }
+        
+    }
 }
